@@ -523,10 +523,10 @@
             <i data-lucide="download"></i>
             <span>Windows版をダウンロード</span>
           </a>
-          <button class="mobile-launch-btn" onclick="openWebsiteMobileGuide()">
+          <a href="app/index.html" class="mobile-launch-btn">
             <i data-lucide="smartphone"></i>
             <span>📱 スマホで今すぐ開く</span>
-          </button>
+          </a>
         </div>
         <div class="download-info">
           💻 Windows 10 / 11 対応 • 📱 iOS (Safari) / Android (Chrome) からインストール不要で直接利用可能！
@@ -630,7 +630,7 @@
       </p>
 
       <div style="background: #fff; padding: 12px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.25rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
-        <img id="websiteQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=https://aya363643-ship-it.github.io/VALORANT_Coach_Studio/" alt="Mobile QR Code" style="width: 160px; height: 160px; display: block;" />
+        <img id="websiteQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=https://aya363643-ship-it.github.io/VALORANT_Coach_Studio/app/" alt="Mobile QR Code" style="width: 160px; height: 160px; display: block;" />
       </div>
 
       <div style="background: rgba(255,255,255,0.05); padding: 12px 16px; border-radius: 10px; font-size: 0.85rem; color: #94a3b8; text-align: left; margin-bottom: 1.5rem; line-height: 1.6;">
@@ -720,7 +720,8 @@
       const modal = document.getElementById('websiteMobileModal');
       const qrImg = document.getElementById('websiteQrImg');
       if (qrImg) {
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(window.location.href)}`;
+        const appUrl = new URL('app/', window.location.href).href;
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(appUrl)}`;
       }
       if (modal) modal.style.display = 'flex';
     }
