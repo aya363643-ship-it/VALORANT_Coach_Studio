@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mint & Lime - VALORANT 専属コーチスタジオ</title>
+  <link rel="icon" type="image/x-icon" href="app_icon.ico">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#090d16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mint & Lime">
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="studio-layout">
+    <!-- 背景エフェクト -->
+    <div class="bg-glow purple-glow"></div>
+    <div class="bg-glow pink-glow"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- 左サイドバー：アバター表示エリア（スマホ時はドロワーまたはモーダル化） -->
+    <aside id="sidebarAvatarPane" class="sidebar-avatar-pane">
+      <div class="app-status-bar">
+        <span class="live-dot" id="micLiveDot"></span>
+        <div class="mic-equalizer" id="micEqualizer">
+          <span class="eq-bar"></span>
+          <span class="eq-bar"></span>
+          <span class="eq-bar"></span>
+          <span class="eq-bar"></span>
+          <span class="eq-bar"></span>
+        </div>
+        <div class="transcript-badge-box">
+          <span class="transcript-label">文字起こし:</span>
+          <span class="status-msg" id="micStatusMsg">待機中 (声を聞いてるよ)</span>
+        </div>
+        <button id="mobileAvatarCloseBtn" class="mobile-avatar-close-btn" onclick="toggleMobileAvatarPane(false)" title="アバター画面を閉じる">✕</button>
+      </div>
+
+      <!-- カメラリグ：話者にズームイン/ズームアウト -->
+      <div class="avatar-camera-container">
+        <div id="cameraRig" class="camera-rig mode-dual">
+          <!-- 上枠：ミント（ミントグリーン枠） -->
+          <div id="aiCard" class="avatar-card card-ai">
+            <!-- ミニ・フキダシ（左側限定のおしゃべり表示） -->
+            <div id="bubbleMint" class="avatar-mini-bubble bubble-mint" style="display:none;"></div>
+            <div class="frame-border frame-ai">
+              <div class="frame-tag">ミント / ANALYST</div>
+              <div class="avatar-wrapper">
+                <img id="aiImg" class="avatar-img" src="assets/ai.png" alt="Mint">
+              </div>
+              <div class="speaker-indicator ai-indicator">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+              </div>
+            </div>
+            <div class="name-plate name-ai">ミント</div>
+          </div>
+
+          <!-- 下枠：ライム（ピンク枠） -->
+          <div id="hinanoCard" class="avatar-card card-hinano">
+            <!-- ミニ・フキダシ（左側限定のおしゃべり表示） -->
+            <div id="bubbleLime" class="avatar-mini-bubble bubble-lime" style="display:none;"></div>
+            <div class="frame-border frame-hinano">
+              <div class="frame-tag">ライム / GAMER</div>
+              <div class="avatar-wrapper">
+                <img id="hinanoImg" class="avatar-img" src="assets/hinano.png" alt="Lime">
+              </div>
+              <div class="speaker-indicator hinano-indicator">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+              </div>
+            </div>
+            <div class="name-plate name-hinano">ライム</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 右メイン：チャットログ & 入力エリア -->
+    <main class="main-chat-pane">
+      <!-- ヘッダー情報 ＆ タブ切り替えバー -->
+      <header class="chat-header">
+        <div class="chat-title-group">
+          <div class="tab-buttons">
+            <button id="tabChatBtn" class="tab-btn active" onclick="switchTab('chat')">💬 チャット</button>
+            <button id="tabAnalyticsBtn" class="tab-btn" onclick="switchTab('analytics')">📊 総合分析</button>
+            <button id="tabMatchesBtn" class="tab-btn" onclick="switchTab('matches')">📋 試合一覧 (カード)</button>
+            <button id="tabRoundsBtn" class="tab-btn" onclick="switchTab('rounds')">🎯 ラウンド解説 (TRN)</button>
+            <button id="tabFolderBtn" class="tab-btn" onclick="switchTab('folder')">🎬 クリップ・動画診断</button>
+            <button id="tabSkinsBtn" class="tab-btn" onclick="switchTab('skins')">🛒 デイリーストア・スキン図鑑</button>
+            <button id="tabPartyToolsBtn" class="tab-btn" onclick="switchTab('partyTools')">🎲 パーティツール</button>
+            <button id="tabGameDevBtn" class="tab-btn" onclick="switchTab('gamedev')">🕹️ ゲーム開発</button>
+            <button id="tabSettingsBtn" class="tab-btn" onclick="switchTab('settings')">⚙️ 設定</button>
+          </div>
+          <span class="chat-sub-info">マスター: <span id="headerPlayerTag">未設定 (初期設定を行ってください)</span> 
+            <span class="rank-badge-wrap" id="headerRankBadgeWrap">
+              <img id="headerRankIcon" src="https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/0.png" alt="Rank Icon" class="rank-icon-img" />
+              <span class="rank-badge" id="headerRankBadge">UNRANKED</span>
+            </span>
+          </span>
+        </div>
+        <div class="header-actions">
+          <button id="mobileConnectBtn" class="btn-mobile-connect" onclick="openMobileConnectModal()" title="スマホで開く（QRコード・同一Wi-Fi操作）">
+            <span>📱</span> <span>スマホ連携</span>
+          </button>
+          <button id="mobileAvatarToggleBtn" class="btn-mobile-avatar-toggle" onclick="toggleMobileAvatarPane()" title="ミント＆ライムのアバターを表示/非表示">
+            <span>👥</span> <span>アバター</span>
+          </button>
+          <button id="musicSearchBtn" class="btn-music-search" onclick="openMusicSearchModal()" title="今流れている曲を聴き取って特定したり、鼻歌・ハミングから曲を特定します！">
+            <span>🎵</span> <span>曲を聴かせる / 鼻歌</span>
+          </button>
+          <button id="screenShareToggleBtn" class="btn-screen-share-toggle screen-share-off" onclick="toggleScreenShare()" title="ゲームや作業画面を2人に見せてリアルタイム応援・雑談（マイクラ、Apex、VALORANTなど何でもOK！）">
+            <span id="screenShareIcon">🖥️</span> <span id="screenShareText">画面共有 OFF</span>
+          </button>
+          <button id="micToggleBtn" class="btn-mic-toggle mic-on" onclick="toggleSpeechRecognition()" title="マイク音声操作（呼び出し・音声チャット入力）のON/OFF">
+            <span id="micIcon">🎙️</span> <span id="micText">マイク入力 ON</span>
+          </button>
+          <button id="voiceToggleBtn" class="btn-voice-toggle voice-on" onclick="toggleVoice()" title="キャラクターの音声読み上げ（声）のON/OFF">
+            <span id="voiceIcon">🔊</span> <span id="voiceText">読み上げ ON</span>
+          </button>
+          <button class="btn-sync" onclick="syncMatches()" title="Trackerから最新戦績を更新">🔄 戦績同期</button>
+        </div>
+      </header>
+
+      <!-- 1. チャットタブ -->
+      <section id="paneChat" class="tab-pane active-pane">
+        <div id="chatHistory" class="chat-history">
+          <!-- 初期ウェルカムメッセージ (ミントとライムの気軽な挨拶) -->
+          <div class="chat-msg coach-msg turn-ai">
+            <div class="msg-header">
+              <span class="speaker-pill speaker-ai">ミント (アナリスト)</span>
+              <span class="msg-time">START</span>
+            </div>
+            <div class="msg-body">マスター、お疲れ様です！最新のスタッツもバッチリ分析していきますね！</div>
+          </div>
+          <div class="chat-msg coach-msg turn-hinano">
+            <div class="msg-header">
+              <span class="speaker-pill speaker-hinano">ライム (ゲーマー)</span>
+              <span class="msg-time">START</span>
+            </div>
+            <div class="msg-body">ヤッホーマスター！調子はどう？今日もランクガンガン回そ〜！何でも聞いてね！</div>
+          </div>
+        </div>
+
+        <!-- 下部入力 & クイックボタンエリア -->
+        <footer class="chat-bottom-bar">
+          <div class="quick-suggests">
+            <button class="btn-chip" onclick="triggerTrackerOpenWithAnimation('hinano')" title="ライムを呼んでトラッカーを呼び出します">🎯 ライム、トラッカー開いて！</button>
+            <button class="btn-chip" onclick="triggerTrackerOpenWithAnimation('ai')" title="ミントを呼んでトラッカーを呼び出します">📊 ミント、トラッカー開いて！</button>
+            <button class="btn-chip" onclick="openMusicSearchModal()" title="いま流れている曲や鼻歌を特定・分析します">🎵 この曲なに？(音楽特定/鼻歌)</button>
+            <button class="btn-chip" onclick="sendQuickMessage('1ラウンドから順番に解説して！')">▶️ 1ラウンドから解説開始</button>
+            <button class="btn-chip" onclick="sendQuickMessage('次行っていいよ！')">⏭️ 次行っていいよ (次Rへ)</button>
+          </div>
+          <form id="chatForm" class="chat-input-form" onsubmit="handleChatSubmit(event)">
+            <input type="text" id="userInput" placeholder="2人に質問・相談する（例: 前の試合どうだった？）" autocomplete="off" />
+            <button type="submit" id="sendBtn" class="btn-send">
+              <span>送信</span>
+            </button>
+          </form>
+        </footer>
+      </section>
+
+      <!-- 2. 高度総合分析タブ (五角形レーダーチャート・マップ別勝率・エージェント戦績・攻守勝率) -->
+      <section id="paneAnalytics" class="tab-pane">
+        <div class="analytics-pane-container">
+          <div class="analytics-pane-header">
+            <div class="analytics-header-title">
+              <h3>📊 プレイヤー総合カルテ ＆ 戦力レーダーチャート</h3>
+              <p>直近の対戦データを多角的に集計！ミントとライムがあなたの強み・改善点を診断します。</p>
+            </div>
+            <button class="btn-refresh-matches" onclick="loadAnalyticsData(true)">🔄 分析データを更新</button>
+          </div>
+
+          <div class="analytics-grid">
+            <!-- 1. 五角形レーダーチャート & カルテ診断 -->
+            <div class="analytics-card radar-card">
+              <div class="card-head">
+                <h4>🎯 5大ステータス・レーダーカルテ</h4>
+                <span class="card-badge-val" id="analyticsOverallWinrate">勝率: --%</span>
+              </div>
+              <div class="radar-chart-wrap">
+                <canvas id="radarChartCanvas" width="340" height="300"></canvas>
+              </div>
+              <div class="radar-summary-stats">
+                <div class="radar-stat-pill"><span class="pill-label">平均HS率</span><b id="statAvgHs">--%</b></div>
+                <div class="radar-stat-pill"><span class="pill-label">平均ADR</span><b id="statAvgAdr">--</b></div>
+                <div class="radar-stat-pill"><span class="pill-label">平均KD</span><b id="statAvgKd">--</b></div>
+                <div class="radar-stat-pill"><span class="pill-label">集計試合数</span><b id="statTotalMatches">--戦</b></div>
+              </div>
+              <div class="coaches-evaluation-box" id="coachesEvaluationBox">
+                <div class="eval-title">🌱 ミント ＆ ⚡ ライムのカルテ診断:</div>
+                <p id="evalText">データを読み込み中...</p>
+              </div>
+            </div>
+
+            <!-- 2. マップ別勝率ランキング -->
+            <div class="analytics-card map-stats-card">
+              <div class="card-head">
+                <h4>🗺️ マップ別 勝率 ＆ パフォーマンス</h4>
+                <span class="card-sub-info">得意・苦手マップの傾向</span>
+              </div>
+              <div class="map-stats-list" id="mapStatsList">
+                <div class="matches-loading">マップ戦績を集計中...</div>
+              </div>
+            </div>
+
+            <!-- 3. エージェント別戦績カード -->
+            <div class="analytics-card agent-stats-card">
+              <div class="card-head">
+                <h4>⚔️ 使用エージェント別 成績一覧</h4>
+                <span class="card-sub-info">ピック率・勝率・総キル</span>
+              </div>
+              <div class="agent-stats-list" id="agentStatsList">
+                <div class="matches-loading">エージェント戦績を集計中...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 試合一覧カードタブ (ビジュアルスコアカード) -->
+      <section id="paneMatches" class="tab-pane">
+        <div class="matches-pane-container">
+          <div class="matches-pane-header">
+            <div class="matches-header-title">
+              <h3>🏆 直近の対戦履歴 (K/D・スコアカード)</h3>
+              <p>カードをクリックすると、その試合の分析やアドバイスをミントとライムに依頼できます！</p>
+            </div>
+            <button class="btn-refresh-matches" onclick="loadMatchCards(true)">🔄 一覧を更新</button>
+          </div>
+          <div class="matches-cards-grid" id="matchesCardsGrid">
+            <!-- JSでリッチな試合カードを動的描画 -->
+            <div class="matches-loading">試合データを読み込み中...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. ラウンド解説タブ (TRN完全再現ビジュアルタイムライン！) -->
+      <section id="paneRounds" class="tab-pane">
+        <div class="rounds-pane-container">
+          <!-- 試合切り替えセレクターバー -->
+          <div class="rounds-match-selector-bar">
+            <div class="match-select-info">
+              <span class="selector-icon">🎮</span>
+              <label for="roundsMatchSelect" class="selector-label">対象の試合:</label>
+              <select id="roundsMatchSelect" class="rounds-match-dropdown" onchange="onRoundsMatchSelectChanged(this.value)">
+                <option value="">最新の試合を読み込み中...</option>
+              </select>
+            </div>
+            <div class="match-summary-tag" id="roundsMatchSummaryTag">
+              <span id="roundsMapBadge" class="map-badge-tag">MAP</span>
+              <span id="roundsAgentBadge" class="agent-badge-tag">AGENT</span>
+            </div>
+          </div>
+
+          <!-- ラウンド選択ナビゲーションバー (TRNスタイル) -->
+          <div class="rounds-nav-bar">
+            <button class="btn-nav-round" onclick="navigateRound(-1)">◀ 前へ</button>
+            <div class="rounds-pills-scroll" id="roundsPillsList">
+              <!-- JSで全ラウンドの勝敗バー（緑/赤）を動的生成 -->
+            </div>
+            <button class="btn-nav-round" onclick="navigateRound(1)">次へ ▶</button>
+          </div>
+
+          <!-- 選択中ラウンドのヘッダー情報 ＆ 部位別ヒット内訳 -->
+          <div class="current-round-header" id="currentRoundHeader">
+            <div class="round-title-group">
+              <span class="round-title-label" id="roundTitleLabel">ROUND 1</span>
+              <span class="round-status-badge" id="roundStatusBadge">
+                <span id="roundStatusEn">VICTORY / ELIMINATION</span>
+                <span class="ruby-sub" id="roundStatusJp">勝利 (敵全滅)</span>
+              </span>
+            </div>
+            <!-- ヒット合計バッジ (自分が相手に与えたダメージ / 自分が相手から受けたダメージ) -->
+            <div class="round-hits-summary" id="roundHitsSummary">
+              <!-- 与えたダメージ (DEALT) -->
+              <div class="hits-group hits-dealt">
+                <span class="hits-group-title">🎯 自分が与えたダメージ:</span>
+                <span class="hit-chip hit-head">頭: <b id="hitHeadVal">0</b></span>
+                <span class="hit-chip hit-body">胴: <b id="hitBodyVal">0</b></span>
+                <span class="hit-chip hit-leg">脚: <b id="hitLegVal">0</b></span>
+                <span class="hit-chip hit-dmg">計 <b id="hitDmgVal">0</b> DMG</span>
+              </div>
+              <!-- 受けたダメージ・被弾 (RECEIVED) -->
+              <div class="hits-group hits-received">
+                <span class="hits-group-title">💥 自分が食らったダメージ:</span>
+                <span class="hit-chip hit-recv-head">頭被弾: <b id="hitRecvHeadVal">0</b></span>
+                <span class="hit-chip hit-recv-body">胴被弾: <b id="hitRecvBodyVal">0</b></span>
+                <span class="hit-chip hit-recv-dmg">被ダメ <b id="hitRecvDmgVal">0</b> DMG</span>
+              </div>
+            </div>
+            <button class="btn-coach-this-round" onclick="askCoachCurrentRound()">🎙️ 2人にこのラウンドを解説してもらう！</button>
+          </div>
+
+          <!-- 交戦デュエル内訳（誰に何発当てたか＆誰から何発食らったか一目でわかるカード一覧！） -->
+          <div class="round-duels-wrapper" id="roundDuelsWrapper" style="display:none;">
+            <div class="duels-title">🎯 あなたの交戦・ダメージ詳細 <span class="duels-sub">(誰に何発当てて、誰から何発食らったか)</span>:</div>
+            <div class="duels-cards-list" id="roundDuelsList"></div>
+          </div>
+
+          <!-- TRN風 キルタイムラインカード一覧 -->
+          <div class="round-events-container" id="roundEventsContainer">
+            <!-- JSで緑/赤のキルカードを生成 -->
+          </div>
+
+          <!-- 👥 試合参加者スコアボード (全10人・味方/敵のK/D/A・非公開プレイヤーも安全表示) -->
+          <div class="match-scoreboard-wrapper" id="matchScoreboardWrapper" style="display:none;">
+            <div class="scoreboard-header-title">
+              <span class="sb-title">👥 この試合の全プレイヤー成績（味方 ＆ 敵チーム）</span>
+              <span class="sb-sub">※ 非公開設定のプレイヤーも安全にエージェント名で表示されます</span>
+            </div>
+            
+            <!-- 味方チーム (Friendly) -->
+            <div class="sb-team-block team-friendly-block">
+              <div class="sb-team-tagline friendly-tagline">
+                <span class="sb-tag-badge">FRIENDLY</span> 味方チーム
+              </div>
+              <div class="sb-table-wrap">
+                <table class="sb-table">
+                  <thead>
+                    <tr>
+                      <th>プレイヤー</th>
+                      <th>ランク</th>
+                      <th>エージェント</th>
+                      <th>K</th>
+                      <th>D</th>
+                      <th>A</th>
+                      <th>K/D</th>
+                      <th>ADR</th>
+                      <th>HS%</th>
+                    </tr>
+                  </thead>
+                  <tbody id="friendlyScoreboardBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 敵チーム (Enemy) -->
+            <div class="sb-team-block team-enemy-block">
+              <div class="sb-team-tagline enemy-tagline">
+                <span class="sb-tag-badge">ENEMY</span> 敵チーム
+              </div>
+              <div class="sb-table-wrap">
+                <table class="sb-table">
+                  <thead>
+                    <tr>
+                      <th>プレイヤー</th>
+                      <th>ランク</th>
+                      <th>エージェント</th>
+                      <th>K</th>
+                      <th>D</th>
+                      <th>A</th>
+                      <th>K/D</th>
+                      <th>ADR</th>
+                      <th>HS%</th>
+                    </tr>
+                  </thead>
+                  <tbody id="enemyScoreboardBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. クリップ・動画診断タブ (動画・画像・エイム・立ち回りAI診断！) -->
+      <section id="paneFolder" class="tab-pane">
+        <div class="folder-pane-container">
+          <div class="drop-zone" id="dropZone" onclick="triggerFileInput()">
+            <div class="drop-icon">🎬</div>
+            <h3>動画クリップやスクリーンショットをドラッグ＆ドロップ</h3>
+            <p>練習場のエイム練習や試合のクリップ（MP4 / WebM / PNG / JPG）を読み込ませて、エイムのブレや立ち回りを診断できます</p>
+            <div class="drop-guideline-pills">
+              <span class="guide-pill">⏱️ 推奨: 15秒〜60秒の短尺クリップ</span>
+              <span class="guide-pill">📦 最大: 100MB</span>
+              <span class="guide-pill">🛡️ PC保存なし（安全解析）</span>
+            </div>
+            <button class="btn-select-file" type="button">クリップ・動画を選択</button>
+            <input type="file" id="fileInput" accept="video/mp4,video/webm,video/quicktime,image/png,image/jpeg,text/*" style="display:none" onchange="handleFileSelected(event)" />
+          </div>
+
+          <!-- プレビュー＆診断アクションエリア -->
+          <div id="loadedFileInfo" class="loaded-file-info" style="display:none;">
+            <div class="media-preview-header">
+              <h4>🎬 読み込みクリップ: <span id="fileNameDisplay"></span></h4>
+              <span id="fileTypeBadge" class="file-type-badge">VIDEO</span>
+            </div>
+
+            <!-- 動画プレイヤーまたは画像プレビュー -->
+            <div class="media-display-box" id="mediaDisplayBox">
+              <video id="videoPreview" class="media-video" controls style="display:none;"></video>
+              <img id="imagePreview" class="media-image" style="display:none;" />
+              <pre id="fileContentPreview" class="file-preview-box" style="display:none;"></pre>
+            </div>
+
+            <!-- コーチング診断ボタン -->
+            <div class="clip-actions-group">
+              <button class="btn-clip-action btn-aim-action" onclick="diagnoseClip('aim')">
+                🎯 <b>エイム・感度診断</b>
+                <span>（クロスヘアのブレ・行き過ぎ・感度上げ下げアドバイス）</span>
+              </button>
+              <button class="btn-clip-action btn-pos-action" onclick="diagnoseClip('positioning')">
+                ♟️ <b>立ち回り・射線管理診断</b>
+                <span>（ポジショニング・ピークの仕方・スキルのタイミング）</span>
+              </button>
+              <button class="btn-clip-action btn-custom-action" onclick="diagnoseClip('general')">
+                💡 <b>総合アドバイス＆反省会</b>
+                <span>（良かった点・改善すべき重要ポイント）</span>
+              </button>
+            </div>
+
+            <div id="clipAnalyzingStatus" class="clip-analyzing-status" style="display:none;">
+              <span class="spin-icon">⏳</span> 2人がクリップ映像をフレーム解析中...少々お待ちください！
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 設定タブ -->
+      <section id="paneSettings" class="tab-pane">
+        <div class="settings-container">
+          <div class="settings-card">
+            <h3>🎙️ 入力 ＆ 出力デバイス設定 (マイク / イヤホン)</h3>
+            <p style="font-size:12px; color:#94a3b8; margin-top:-8px; margin-bottom:12px;">
+              使用するイヤホンマイクやスピーカーを自由に切り替えられます。
+            </p>
+            <div class="setting-item">
+              <label>🎙️ 入力デバイス (マイク)</label>
+              <select id="settingAudioInput" style="max-width:280px;" onchange="onAudioDeviceChanged()">
+                <option value="default">既定のマイク (Default)</option>
+              </select>
+            </div>
+            
+            <!-- 🎤 独立マイクテストメーター（マイクが音を拾っているか常時確認） -->
+            <div class="mic-test-panel" style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:12px; margin:10px 0;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="font-weight:700; color:#34d399; font-size:13px; display:flex; align-items:center; gap:6px;">
+                  <span>🎤 マイクテスト (入力音量レベル)</span>
+                  <span id="micTestActiveBadge" style="font-size:10px; padding:2px 6px; border-radius:10px; background:rgba(52,211,153,0.2); color:#6ee7b7;">監視中</span>
+                </div>
+                <span id="micTestLevelNum" style="font-size:12px; color:#34d399; font-weight:700; font-family:monospace;">0%</span>
+              </div>
+              <!-- リアルタイム音量バー -->
+              <div style="background:rgba(0,0,0,0.4); border-radius:6px; height:14px; width:100%; overflow:hidden; border:1px solid rgba(255,255,255,0.1); position:relative;">
+                <div id="micTestMeterBar" style="height:100%; width:0%; background:linear-gradient(90deg, #10b981 0%, #eab308 70%, #ef4444 100%); transition:width 0.05s ease; border-radius:4px;"></div>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                <span style="font-size:11px; color:#94a3b8;">※マイクに向かって声を出して緑色のバーが動けば正常に拾えています。</span>
+                <span id="micTestVoiceLabel" style="font-size:11px; color:#a7f3d0; font-weight:600;"></span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div>
+                <label>🎙️ 音声チャット入力（マイクで会話）</label>
+                <div style="font-size:11px; color:#94a3b8;">※OFFでも「ミント（ライム）、トラッカー開いて！」の呼び出しは常時声で可能です。</div>
+              </div>
+              <input type="checkbox" id="settingMicEnabled" onchange="updateMicSetting()" />
+            </div>
+
+            <!-- 会話送信の待機時間スライダー（1.5〜10.0秒） -->
+            <div class="setting-item" style="margin-top:10px;">
+              <div>
+                <label>⏱️ 話し終わりの待機時間 (ポーズ判定)</label>
+                <div style="font-size:11px; color:#94a3b8;">少し間が空いても会話が途中で勝手に送信されないよう余裕を持たせます。</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <input type="range" id="settingDebounceSec" min="1.5" max="10.0" step="0.5" value="3.0" oninput="onDebounceSliderChanged(this.value)" />
+                <span id="labelDebounceSec" style="font-size:13px; color:#38bdf8; font-weight:700; min-width:48px;">3.0秒</span>
+              </div>
+            </div>
+
+            <div class="setting-item" style="margin-top:8px;">
+              <label>🔊 出力デバイス (イヤホン / スピーカー)</label>
+              <select id="settingAudioOutput" style="max-width:280px;" onchange="onAudioDeviceChanged()">
+                <option value="default">既定のスピーカー (Default)</option>
+              </select>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+              <button class="btn-chip" onclick="refreshAudioDevices()" style="font-size:11px; padding:4px 10px;">
+                🔄 デバイス一覧を再読込
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3>🔊 音声・読み上げ設定</h3>
+            <div class="setting-item">
+              <label>音声読み上げ</label>
+              <input type="checkbox" id="settingVoiceEnabled" checked onchange="updateVoiceSetting()" />
+            </div>
+            <div class="setting-item">
+              <label>全体の音量</label>
+              <input type="range" id="settingVolume" min="0" max="1" step="0.05" value="0.9" onchange="saveSettings()" />
+            </div>
+
+            <!-- ミントの話速設定 -->
+            <div style="background:rgba(20,184,166,0.08); border:1px solid rgba(20,184,166,0.3); border-radius:8px; padding:12px; margin-top:12px;">
+              <div style="font-weight:700; color:#2dd4bf; margin-bottom:4px;">
+                <span>🌱 ミント (アナリスト)</span>
+              </div>
+              <div class="setting-item" style="margin-top:6px;">
+                <label>話すスピード (テンポ)</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <input type="range" id="settingAiSpeed" min="0.8" max="1.6" step="0.05" value="1.05" oninput="saveSettings()" />
+                  <span id="labelAiSpeed" style="font-size:12px; color:#2dd4bf; font-weight:700; min-width:42px;">1.05x</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ライムの話速設定 -->
+            <div style="background:rgba(244,63,94,0.08); border:1px solid rgba(244,63,94,0.3); border-radius:8px; padding:12px; margin-top:12px;">
+              <div style="font-weight:700; color:#fb7185; margin-bottom:4px;">
+                <span>⚡ ライム (ゲーマー)</span>
+              </div>
+              <div class="setting-item" style="margin-top:6px;">
+                <label>話すスピード (テンポ)</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <input type="range" id="settingHinanoSpeed" min="0.8" max="1.6" step="0.05" value="1.15" oninput="saveSettings()" />
+                  <span id="labelHinanoSpeed" style="font-size:12px; color:#fb7185; font-weight:700; min-width:42px;">1.15x</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- COEIROINK 音声エンジン稼働ステータス & ワンクリック起動 -->
+            <div id="coeiroinkStatusBox" style="margin-top:14px; padding:10px 12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:8px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span id="coeiroinkStatusDot" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#94a3b8;"></span>
+                <span id="coeiroinkStatusText" style="font-size:12px; color:#cbd5e1; font-weight:600;">音声エンジンを確認中...</span>
+              </div>
+              <button id="btnLaunchCoeiroink" onclick="requestLaunchCoeiroink()" style="display:none; font-size:11px; padding:5px 12px; background:linear-gradient(135deg, #10b981, #059669); border:none; border-radius:6px; color:#fff; font-weight:700; cursor:pointer;">
+                🚀 音声エンジンを起動
+              </button>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; flex-wrap:wrap; gap:8px;">
+              <span id="voiceSaveStatus" style="font-size:11px; color:#4ade80;"></span>
+              <div style="display:flex; gap:8px;">
+                <button class="btn-chip" onclick="testSingleVoice('ai')" style="font-size:11px; padding:5px 12px; background:rgba(20,184,166,0.2); border:1px solid rgba(20,184,166,0.5); color:#2dd4bf;">
+                  🌱 ミントを試聴
+                </button>
+                <button class="btn-chip" onclick="testSingleVoice('hinano')" style="font-size:11px; padding:5px 12px; background:rgba(244,63,94,0.2); border:1px solid rgba(244,63,94,0.5); color:#fb7185;">
+                  ⚡ ライムを試聴
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3>🎥 カメラ演出設定 (プランB)</h3>
+            <div class="setting-item">
+              <label>話者へのズームイン・ズームアウト演出</label>
+              <input type="checkbox" id="settingCameraZoom" checked onchange="saveSettings()" />
+            </div>
+            <div class="setting-item">
+              <label>まばたき（パチパチ瞬き）</label>
+              <input type="checkbox" id="settingBlinking" checked onchange="toggleBlinkingSetting()" />
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3>🎮 VALORANT プレイヤー設定（他の人に交代・共有可能！）</h3>
+            <p style="font-size:12px; color:#94a3b8; margin-top:-8px; margin-bottom:8px;">
+              自分やお友達の「ゲーム内名前」と「タグ（#以降の数字や英字）」を入力すると、自動でその人のTracker戦績・試合カード・ラウンドデータを取得します！
+            </p>
+            <div class="setting-item">
+              <label>プレイヤー名 (Riot ID)</label>
+              <input type="text" id="settingPlayerName" value="" placeholder="例: ばけたん, TenZ" style="width:200px; padding:6px 10px; background:#141224; border:1px solid rgba(168,85,247,0.4); color:#fff; border-radius:6px;" />
+            </div>
+            <div class="setting-item">
+              <label>タグライン (#の後の文字列)</label>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <span style="color:#a855f7; font-weight:800;">#</span>
+                <input type="text" id="settingPlayerTag" value="" placeholder="例: 0911, JP1" style="width:180px; padding:6px 10px; background:#141224; border:1px solid rgba(168,85,247,0.4); color:#fff; border-radius:6px;" />
+              </div>
+            </div>
+            <div class="setting-item">
+              <label>現在のランクバッジ表示</label>
+              <input type="text" id="settingRankBadge" value="UNRANKED" placeholder="例: PLATINUM 1, DIAMOND 2" style="width:200px; padding:6px 10px; background:#141224; border:1px solid rgba(168,85,247,0.4); color:#fff; border-radius:6px;" />
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+              <button class="btn-chip" onclick="openTutorialManually()" style="font-size:11px; padding:4px 10px;">
+                🔰 初回チュートリアルを開く
+              </button>
+              <button class="btn-save-settings" onclick="savePlayerSettings()">💾 プレイヤー設定を保存＆戦績更新</button>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3>🤖 AIモデル ＆ Gemini API Key 設定</h3>
+            <p style="font-size:12px; color:#94a3b8; margin-top:-8px; margin-bottom:8px;">
+              Google AI Studioの無料Gemini APIキーを自動保持・変更できます。
+            </p>
+            <div class="setting-item">
+              <label>使用モデル</label>
+              <select id="settingModel" onchange="saveApiSettings()">
+                <option value="gemini-flash-lite-latest" selected>Gemini Flash Lite (爆速・低遅延・推奨)</option>
+                <option value="gemini-flash-latest">Gemini Flash (標準)</option>
+              </select>
+
+            </div>
+            <div class="setting-item">
+              <label>Gemini API Key</label>
+              <input type="password" id="settingApiKey" value="" placeholder="AIzaSy... または AQ..." style="width:240px; padding:6px 10px; background:#141224; border:1px solid rgba(168,85,247,0.4); color:#fff; border-radius:6px;" />
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+              <span id="saveStatusNotice" style="font-size:12px; color:#4ade80;"></span>
+              <button class="btn-save-settings" onclick="saveApiSettings()">💾 API設定を保存</button>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3>💻 PC起動・システム常駐設定</h3>
+            <p style="font-size:12px; color:#94a3b8; margin-top:-8px; margin-bottom:8px;">
+              パソコン起動時やウィンドウを閉じたときの待機動作を設定できます。
+            </p>
+            <div class="setting-item">
+              <label>PC起動時に自動で立ち上げる</label>
+              <input type="checkbox" id="settingAutoStart" onchange="toggleAutoStartSetting()" />
+            </div>
+            <span id="autoStartNotice" style="font-size:11px; color:#94a3b8; display:block; margin-top:4px;">
+              ※ ONにするとWindowsログイン時にバックグラウンドで自動待機します。
+            </span>
+
+            <div style="margin-top:16px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08);">
+              <div style="font-size:12px; color:#e2e8f0; font-weight:600; margin-bottom:4px;">💡 ウィンドウを閉じたときの動作</div>
+              <p style="font-size:11px; color:#94a3b8; line-height:1.5; margin:0 0 10px 0;">
+                右上の「×」ボタンを押してもアプリは裏で待機（タスクトレイ常駐）し、いつでも<b>「ライム（ミント）、トラッカー開いて！」</b>と呼ぶとひょこっと飛び出して再表示されます。<br>
+                完全にアプリを終了したいときは、下のボタンまたはタスクトレイのアイコンから終了できます。
+              </p>
+              <div style="display:flex; justify-content:flex-end;">
+                <button onclick="completelyExitApp()" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#f87171; padding:6px 14px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600;">
+                  🚪 アプリを完全に終了する
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 📱 スマホ・別端末からの接続 (ローカルWi-Fi接続) -->
+          <div class="settings-card" id="mobileConnectCard">
+            <h3>📱 スマホ連携（同一Wi-Fiからスマホで操作）</h3>
+            <p style="font-size:12px; color:#94a3b8; margin-top:-8px; margin-bottom:12px;">
+              スマホやタブレットのカメラでQRコードを読み取るか、ブラウザでアドレスを開くだけで、スマホからチャット・ストア確認・戦績チェックができます！
+            </p>
+            <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; background:rgba(0,0,0,0.3); padding:16px; border-radius:10px; border:1px solid rgba(56,189,248,0.2);">
+              <div id="mobileQrContainer" style="background:#fff; padding:8px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; min-width:136px; min-height:136px;">
+                <img id="mobileQrImg" src="" alt="Mobile QR Code" style="width:120px; height:120px; display:block;" />
+              </div>
+              <div style="flex:1; min-width:200px;">
+                <div style="font-size:11px; color:#94a3b8; font-weight:700; margin-bottom:4px;">スマホで開くアドレス：</div>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                  <input type="text" id="mobileUrlInput" readonly value="http://..." style="width:100%; max-width:260px; padding:7px 10px; background:#0f172a; border:1px solid rgba(56,189,248,0.4); color:#38bdf8; border-radius:6px; font-weight:700; font-size:13px;" />
+                  <button class="btn-chip" onclick="copyMobileUrl()" style="font-size:12px; padding:6px 12px; background:rgba(56,189,248,0.2); border:1px solid rgba(56,189,248,0.5); color:#38bdf8; white-space:nowrap;">
+                    📋 コピー
+                  </button>
+                </div>
+                <div style="font-size:11px; color:#cbd5e1; line-height:1.5;">
+                  💡 <b>使い方:</b><br>
+                  1. PCとスマホを<b>同じWi-Fi</b>（ルーター）に接続します。<br>
+                  2. スマホのカメラで左のQRコードを読み取るか、Safari / Chromeでアドレスを開きます。<br>
+                  3. スマホ画面からデイリーストアのチェックや、ミント＆ライムとのチャットができます！
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3>🚀 アプリのバージョンと更新 (完全自動アップデート)</h3>
+            <p style="font-size:12px; color:#94a3b8; margin-top:-8px; margin-bottom:12px;">
+              現在のバージョン: <b id="currentAppVersionDisplay" style="color:#38bdf8;">v1.3.6.9</b><br>
+              新バージョンが公開されている場合、ボタン1つで自動ダウンロード＆再起動置換されます。
+            </p>
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+              <div id="updateStatusText" style="font-size:12px; color:#cbd5e1;">最新の状態です</div>
+              <button id="btnCheckUpdate" onclick="checkForUpdates(true)" style="background:rgba(56,189,248,0.2); border:1px solid rgba(56,189,248,0.5); color:#38bdf8; padding:8px 16px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px;">
+                🔄 アップデートを確認
+              </button>
+            </div>
+            <div id="updateActionArea" style="display:none; margin-top:14px; padding:14px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:10px;">
+              <div style="font-size:14px; font-weight:700; color:#4ade80; margin-bottom:4px;" id="updateFoundTitle">🎉 新しいバージョンが見つかりました！</div>
+              <p style="font-size:12px; color:#cbd5e1; margin:0 0 12px 0;" id="updateFoundNotes"></p>
+
+              <!-- アップデート開始ボタン -->
+              <div id="updateBtnRow">
+                <button id="btnApplyUpdate" onclick="triggerAutoUpdate()" style="background:linear-gradient(135deg, #22c55e, #10b981); border:none; color:#0f172a; padding:9px 20px; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer; box-shadow:0 4px 14px rgba(34,197,94,0.35); transition:transform 0.15s;">
+                  ⚡ 今すぐ自動アップデートして再起動
+                </button>
+              </div>
+
+              <!-- アップデート進捗ゲージ ＆ 実況カード -->
+              <div id="updateProgressCard" style="display:none; margin-top:10px; padding:12px; background:#0f1424; border:1px solid rgba(56,189,248,0.3); border-radius:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <span id="updateProgressStepLabel" style="font-size:12px; font-weight:700; color:#38bdf8;">📥 ダウンロード中...</span>
+                  <span id="updateProgressPercent" style="font-size:14px; font-weight:800; color:#4ade80;">0%</span>
+                </div>
+
+                <!-- プログレスバー（ゲージ） -->
+                <div class="update-progress-track">
+                  <div id="updateProgressBar" class="update-progress-fill" style="width: 0%;"></div>
+                </div>
+
+                <!-- 詳細数値（DL容量・速度） -->
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:#94a3b8; margin-top:6px;">
+                  <span id="updateProgressBytes">0.0 MB / 0.0 MB</span>
+                  <span id="updateProgressSpeed">0.0 MB/s</span>
+                </div>
+
+                <!-- ミント・ライムのリアルタイム実況ボイスフキダシ -->
+                <div id="updateDuoCommentBox" class="update-duo-comment">
+                  ライム「最新アップデート見っけ！準備できたら教えてね！」
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- スキン図鑑＆ウィッシュリスト・課金計算 -->
+      <section id="paneSkins" class="tab-pane">
+        <div class="skins-container">
+          <!-- スキンヘッダー＆コントロールバー -->
+          <div class="skins-header-bar">
+            <div class="skins-title-area">
+              <h2>🔫 VALORANT 全スキン図鑑 & ウィッシュリスト</h2>
+              <p>ゲーム内の全武器スキンを網羅！お気に入りスキンを登録して、必要VPや日本円課金額をリアルタイム計算できます。</p>
+            </div>
+            <!-- ウィッシュリストサマリーバッジ -->
+            <div class="wishlist-summary-card" onclick="toggleWishlistFilter()">
+              <div class="wishlist-summary-icon">💖</div>
+              <div class="wishlist-summary-info">
+                <div class="wishlist-summary-title">ウィッシュリスト (<span id="wishlistCount">0</span>品)</div>
+                <div class="wishlist-summary-val">
+                  <span id="wishlistTotalVp" class="vp-text">0 VP</span>
+                  <span class="yen-text">(約 <span id="wishlistTotalYen">0</span> 円)</span>
+                </div>
+              </div>
+              <button id="btnToggleWishlistView" class="btn-wishlist-filter">★ 一覧表示</button>
+            </div>
+          </div>
+
+          <!-- 🛒 本日のデイリーストア (日替わりショップ4枠 & 更新カウントダウン) -->
+          <div class="daily-store-section">
+            <div class="daily-store-header">
+              <div class="daily-store-title-wrap">
+                <span class="daily-store-badge">🛒 TODAY'S OFFERS</span>
+                <h3 class="daily-store-heading">本日のデイリーストア</h3>
+                <span id="dailyStoreSourceBadge" class="daily-source-badge">日替わりローテーション</span>
+              </div>
+              <div class="daily-store-header-right">
+                <!-- 🪙 ウォレット残高バッジ (VP / RP / KC) -->
+                <div id="dailyStoreWalletWrap" class="daily-store-wallet-wrap" style="display:none;">
+                  <div class="wallet-chip chip-vp" title="ヴァロラントポイント">
+                    <span class="wallet-icon">🪙</span>
+                    <span class="wallet-name">VP</span>
+                    <span id="walletVpVal" class="wallet-value">0</span>
+                  </div>
+                  <div class="wallet-chip chip-rp" title="レディアナイトポイント">
+                    <span class="wallet-icon">🔷</span>
+                    <span class="wallet-name">RP</span>
+                    <span id="walletRpVal" class="wallet-value">0</span>
+                  </div>
+                  <div class="wallet-chip chip-kc" title="キングダムクレジット">
+                    <span class="wallet-icon">👑</span>
+                    <span class="wallet-name">KC</span>
+                    <span id="walletKcVal" class="wallet-value">0</span>
+                  </div>
+                </div>
+                <div class="daily-store-timer-wrap">
+                  <span class="timer-label">⏰ ショップ更新まで:</span>
+                  <span id="dailyStoreCountdown" class="timer-value">--時間--分--秒</span>
+                  <button class="btn-refresh-store" onclick="loadDailyStore(true)" title="デイリーストアを再取得">🔄 更新</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- デイリーストア4枠グリッド -->
+            <div id="dailyStoreGrid" class="daily-store-grid">
+              <div class="daily-store-loading">
+                <div class="spinner"></div>
+                <span>本日のデイリーショップを読み込み中...</span>
+              </div>
+            </div>
+
+            <!-- ミント＆ライムのデイリーショップ入荷実況フキダシ -->
+            <div id="dailyStoreDuoComment" class="daily-store-duo-comment">
+              <span id="dailyStoreCommentText">ライム「今日のデイリーストア入荷したよ！ウィッシュリストのスキン入ってるかな〜！？」</span>
+            </div>
+          </div>
+
+          <!-- スキン図鑑セクション見出し -->
+          <div class="skins-catalog-section-title">
+            <div class="skins-catalog-title-wrap">
+              <span class="skins-catalog-badge">📖 ALL WEAPONS</span>
+              <h3>VALORANT 全スキン図鑑</h3>
+              <span class="skins-catalog-sub-count" id="skinsCatalogCountLabel"></span>
+            </div>
+          </div>
+
+          <!-- フィルター＆検索ツールバー -->
+          <div class="skins-toolbar">
+            <div class="skins-search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="skinSearchInput" placeholder="スキン名・武器名で検索 (例: プライム、ヴァンダル、カラムビット)..." oninput="filterSkinsList()" />
+              <button class="clear-search-btn" onclick="clearSkinSearch()">✕</button>
+            </div>
+
+            <div class="skins-filter-group">
+              <select id="skinCategoryFilter" onchange="filterSkinsList()">
+                <option value="ALL">すべての武器種</option>
+                <option value="Rifle">ライフル (Vandal / Phantom / Bulldog / Guardian)</option>
+                <option value="Sniper">スナイパー (Operator / Outlaw / Marshal)</option>
+                <option value="Sidearm">サイドアーム (Classic / Ghost / Sheriff etc.)</option>
+                <option value="SMG">SMG (Spectre / Stinger)</option>
+                <option value="Shotgun">ショットガン (Judge / Bucky)</option>
+                <option value="Heavy">ヘビー (Odin / Ares)</option>
+                <option value="Melee">近接武器 (ナイフ / カラムビット etc.)</option>
+              </select>
+
+              <select id="skinTierFilter" onchange="filterSkinsList()">
+                <option value="ALL">全ティア</option>
+                <option value="Exclusive">Exclusive (2,175 VP〜)</option>
+                <option value="Ultra">Ultra (2,475 VP〜)</option>
+                <option value="Premium">Premium (1,775 VP)</option>
+                <option value="Deluxe">Deluxe (1,275 VP)</option>
+                <option value="Select">Select (875 VP)</option>
+              </select>
+
+              <button class="btn-duo-skin-recommend" onclick="askDuoForSkinAdvice()">
+                ✨ ミント＆ライムに今日のおすすめを聞く！
+              </button>
+
+              <button class="btn-refresh-skins" onclick="loadSkinsCatalog(true)" title="スキン図鑑を再読み込み" style="background:#1e293b; border:1px solid #475569; color:#94a3b8; padding:8px 12px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s;">
+                🔄 図鑑を再読み込み
+              </button>
+            </div>
+          </div>
+
+          <!-- スキン一覧グリッド -->
+          <div id="skinsGrid" class="skins-grid">
+            <div class="skins-loading-spinner">
+              <div class="spinner"></div>
+              <span>スキンカタログを読み込み中...</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- パーティツール (ルーレット・ダイス・マップBAN) -->
+      <section id="panePartyTools" class="tab-pane">
+        <div class="party-tools-container">
+          <div class="party-tools-header">
+            <h2>🎲 パーティツール (エージェント抽選・ダイス・マップルーレット)</h2>
+            <p>VCでフレンドと遊ぶ時に大活躍！ミントとライムが可愛いボイスで抽選結果を実況してくれます。</p>
+          </div>
+
+          <div class="party-grid-layout">
+            <!-- ツール1: 1〜100 ダイス（サイコロ） -->
+            <div class="party-card dice-tool-card">
+              <div class="party-card-title">
+                <span class="icon">🎲</span> 1〜100 運試しダイス
+              </div>
+              <p class="party-card-desc">VC内の順番決めや、今日の運勢をサイコロで決めよう！</p>
+              
+              <div class="dice-display-area">
+                <div id="diceResultBox" class="dice-number-box">?</div>
+                <div id="diceCommentBox" class="dice-comment-box">ミント・ライム「いつでも振ってね！」</div>
+              </div>
+
+              <div class="dice-actions">
+                <button class="btn-roll-dice" onclick="rollDice100()">
+                  🎲 サイコロを振る！
+                </button>
+              </div>
+            </div>
+
+            <!-- ツール2: エージェントランダム抽選 -->
+            <div class="party-card agent-roulette-card">
+              <div class="party-card-title">
+                <span class="icon">🎯</span> エージェントランダム抽選
+              </div>
+              <p class="party-card-desc">何を使うか迷った時に！ロール指定（デュエリスト限定など）も可能！</p>
+
+              <div class="agent-filter-pills">
+                <button class="role-pill active" onclick="setAgentFilter('ALL', this)">ALL (全キャラ)</button>
+                <button class="role-pill" onclick="setAgentFilter('デュエリスト', this)">デュエリスト</button>
+                <button class="role-pill" onclick="setAgentFilter('イニシエーター', this)">イニシエーター</button>
+                <button class="role-pill" onclick="setAgentFilter('コントローラー', this)">コントローラー</button>
+                <button class="role-pill" onclick="setAgentFilter('センチネル', this)">センチネル</button>
+              </div>
+
+              <div class="agent-result-display">
+                <div class="agent-portrait-wrapper">
+                  <img id="agentRouletteImg" src="https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1facd6/displayicon.png" alt="Agent" />
+                </div>
+                <div class="agent-info-wrap">
+                  <div id="agentRouletteName" class="agent-name">フェイド</div>
+                  <div id="agentRouletteRole" class="agent-role-badge">イニシエーター</div>
+                  <div id="agentRouletteComment" class="agent-duo-comment">ミント「情報を取ってチームを勝利へ導きましょう！」</div>
+                </div>
+              </div>
+
+              <button class="btn-spin-agent" onclick="spinAgentRoulette()">
+                🎯 エージェントを抽選する！
+              </button>
+            </div>
+
+            <!-- ツール3: マップルーレット ＆ BAN機能 -->
+            <div class="party-card map-roulette-card">
+              <div class="party-card-title">
+                <span class="icon">🗺️</span> マップ抽選 ＆ カスタムBAN
+              </div>
+              <p class="party-card-desc">カスタムマッチやランク前のマップ決め！除外したいマップをクリックしてBANできます。</p>
+
+              <div id="mapsBanGrid" class="maps-ban-grid">
+                <!-- JSでマップ一覧チップを描画 -->
+              </div>
+
+              <div class="map-result-banner" id="mapResultBanner" style="display:none;">
+                <img id="mapResultImg" src="" alt="Selected Map" />
+                <div class="map-result-overlay">
+                  <div class="map-tag">SELECTED MAP</div>
+                  <div id="mapResultName" class="map-name-big">アセント</div>
+                </div>
+              </div>
+
+              <div class="map-actions-row">
+                <button class="btn-spin-map" onclick="spinMapRoulette()">
+                  🗺️ 残ったマップから抽選！
+                </button>
+                <button class="btn-reset-map-ban" onclick="resetMapBanList()">
+                  🔄 BANを全リセット
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 🕹️ ゲーム開発・プログラムモード (Antigravity Style Game Creator Studio) -->
+      <section id="paneGameDev" class="tab-pane">
+        <div class="gamedev-container">
+          <!-- 上部ツールバー -->
+          <div class="gamedev-toolbar">
+            <div class="gamedev-title-group">
+              <span class="gamedev-badge">⚡ ANTIGRAVITY ENGINE</span>
+              <h2>🕹️ Mint & Lime ゲームクリエイタースタジオ</h2>
+              <span class="gamedev-subtitle">言葉で伝えるだけで、ミント＆ライムが本格ゲームをプログラミング＆即実行！</span>
+            </div>
+            <div class="gamedev-top-actions">
+              <button class="btn-gamedev-action" onclick="exportCurrentGameHtml()" title="作成したゲームを単体HTMLファイルとしてPCに保存します">
+                💾 ゲームを書き出し
+              </button>
+              <button class="btn-gamedev-action secondary" onclick="restartCurrentGame()" title="ゲームをリセットして最初から遊ぶ">
+                🔄 リスタート
+              </button>
+            </div>
+          </div>
+
+          <!-- 2カラム開発エリア -->
+          <div class="gamedev-workspace">
+            <!-- 左カラム：AIペアプロ＆プロンプト指示パネル -->
+            <div class="gamedev-prompt-panel">
+              <div class="panel-header">
+                <div class="panel-title">
+                  <span>🤖</span> AIゲームディレクター（ミント＆ライム）
+                </div>
+                <span class="status-indicator live">Ready</span>
+              </div>
+
+              <!-- クイック作成プリセット -->
+              <div class="gamedev-presets-section">
+                <div class="presets-label">⚡ ワンクリックでゲームを作る：</div>
+                <div class="presets-buttons">
+                  <button class="preset-chip" onclick="applyGamePreset('aim_trainer')">🎯 エイム練習ゲーム</button>
+                  <button class="preset-chip" onclick="applyGamePreset('space_shooter')">🚀 2Dスペースシューター</button>
+                  <button class="preset-chip" onclick="applyGamePreset('brick_breaker')">🧱 ネオンブロック崩し</button>
+                  <button class="preset-chip" onclick="applyGamePreset('jump_action')">🏃 2Dジャンプアクション</button>
+                  <button class="preset-chip" onclick="applyGamePreset('cookie_clicker')">🍪 育成クリッカー</button>
+                </div>
+              </div>
+
+              <!-- チャットログ（ミントとライムの開発ログ） -->
+              <div id="gamedevChatHistory" class="gamedev-chat-history">
+                <div class="gamedev-msg msg-system">
+                  <div class="msg-icon">✨</div>
+                  <div class="msg-body">
+                    <b>ミント＆ライムのゲームスタジオへようこそ！</b><br>
+                    上のプリセットを選ぶか、下の入力欄から「ジャンプするアクションゲーム作って」「敵の弾を増やして」「必殺技を追加して」など何でも指示してください！
+                  </div>
+                </div>
+              </div>
+
+              <!-- 指示入力エリア -->
+              <div class="gamedev-input-box">
+                <textarea id="gamedevPromptInput" placeholder="どんなゲームにする？例:「撃った時のエフェクトを派手にして！」「スピードアップのアイテムを追加して」" rows="3" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitGameDevInstruction();}"></textarea>
+                <div class="gamedev-input-footer">
+                  <span class="gamedev-tip">Enterで作成 / Shift+Enterで改行</span>
+                  <button id="btnGenerateGame" class="btn-generate-game" onclick="submitGameDevInstruction()">
+                    <span>🚀 ゲームを生成・改造！</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右カラム：ライブプレイ＆コードプレビュー -->
+            <div class="gamedev-preview-panel">
+              <div class="preview-tabs-header">
+                <div class="preview-tabs">
+                  <button id="btnPreviewPlay" class="preview-tab-btn active" onclick="switchPreviewSubTab('play')">🎮 プレイ画面 (Play)</button>
+                  <button id="btnPreviewCode" class="preview-tab-btn" onclick="switchPreviewSubTab('code')">💻 ソースコード (Code)</button>
+                </div>
+                <div class="preview-controls">
+                  <button class="btn-mini-control" onclick="toggleGameFullscreen()" title="全画面表示">⛶ 全画面</button>
+                </div>
+              </div>
+
+              <!-- 1. ゲーム実行サンドボックス (iframe) -->
+              <div id="gamePlayContainer" class="game-play-container">
+                <iframe id="gameSandboxFrame" sandbox="allow-scripts allow-modals" class="game-sandbox-frame"></iframe>
+                <div id="gameLoadingOverlay" class="game-loading-overlay" style="display:none;">
+                  <div class="spinner"></div>
+                  <span id="gameLoadingText">ミント＆ライムがコードを組み上げています...</span>
+                </div>
+              </div>
+
+              <!-- 2. コードビューアー -->
+              <div id="gameCodeContainer" class="game-code-container" style="display:none;">
+                <div class="code-actions-bar">
+                  <span id="gameCodeSizeBadge" class="code-size-badge">HTML5 Canvas (0 lines)</span>
+                  <button class="btn-copy-code" onclick="copyGameDevCode()">📋 コードをコピー</button>
+                </div>
+                <pre><code id="gameDevCodeDisplay">// ここに生成されたゲームコードが表示されます</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- スキン詳細モーダル (クロマ切替＆動画プレビュー＆ウィッシュリスト追加) -->
+      <div id="skinDetailModal" class="tutorial-modal-overlay" style="display:none;" onclick="if(event.target===this) closeSkinDetailModal()">
+        <div class="skin-modal-card">
+          <div class="skin-modal-header">
+            <div class="skin-modal-title-group">
+              <span id="skinModalTierBadge" class="tier-pill">Premium</span>
+              <h2 id="skinModalName">プライム ヴァンダル</h2>
+            </div>
+            <button class="skin-modal-close-btn" onclick="closeSkinDetailModal()">✕</button>
+          </div>
+
+          <div class="skin-modal-body">
+            <!-- メインプレビュー画像 / 動画 -->
+            <div class="skin-preview-stage">
+              <img id="skinModalPreviewImg" src="" alt="Skin Preview" />
+              <video id="skinModalVideo" src="" controls playsinline style="display:none;"></video>
+            </div>
+
+            <!-- クロマ（カラーバリエーション）選択 -->
+            <div class="skin-chromas-section">
+              <div class="section-label">🎨 カラーバリエーション (クロマ):</div>
+              <div id="skinModalChromasRow" class="chromas-row"></div>
+            </div>
+
+            <!-- レベル / フィニッシャー動画選択 -->
+            <div class="skin-levels-section" id="skinLevelsSection">
+              <div class="section-label">🎬 レベル・フィニッシャー演出プレビュー:</div>
+              <div id="skinModalLevelsRow" class="levels-row"></div>
+            </div>
+          </div>
+
+          <div class="skin-modal-footer">
+            <div class="skin-price-box">
+              <span class="price-label">参考価格:</span>
+              <span id="skinModalVp" class="price-vp">1,775 VP</span>
+              <span id="skinModalYen" class="price-yen">(約 2,200 円)</span>
+            </div>
+            <div class="skin-modal-btns">
+              <button id="btnSkinWishlistToggle" class="btn-skin-wishlist" onclick="toggleCurrentSkinWishlist()">
+                💖 ウィッシュリストに追加
+              </button>
+              <button class="btn-skin-ask-duo" onclick="askDuoAboutThisSkin()">
+                💬 2人にこのスキンどう思うか聞く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 初回チュートリアル＆名前登録モーダル（未設定時は常に初期表示され、登録完了または既存設定がある場合のみ非表示） -->
+  <div id="tutorialModal" class="tutorial-modal-overlay" style="display:flex;">
+    <div class="tutorial-card">
+      <div class="tutorial-header">
+        <div class="tutorial-badge">VALORANT COACH STUDIO</div>
+        <h2>✨ ミント ＆ ライムへようこそ！</h2>
+        <p>あなたの専属AIコーチコンビが毎日のランク戦・エイム・立ち回りを全力サポート！</p>
+      </div>
+
+      <div class="tutorial-body">
+        <div class="tutorial-avatars-preview">
+          <div class="t-avatar-box t-mint">
+            <img src="assets/mint.png" alt="Mint" />
+            <span>ミント / ANALYST</span>
+          </div>
+          <div class="t-avatar-box t-lime">
+            <img src="assets/lime.png" alt="Lime" />
+            <span>ライム / GAMER</span>
+          </div>
+        </div>
+
+        <div class="tutorial-form-box">
+          <label class="t-label">あなたの Riot ID を教えてください：</label>
+          <div class="t-input-group">
+            <input type="text" id="tutorialPlayerName" placeholder="ゲーム内名前 (例: ばけたん)" value="ばけたん" autocomplete="off" onkeydown="if(event.key==='Enter') submitTutorialSetup()" />
+            <span class="t-hash">#</span>
+            <input type="text" id="tutorialPlayerTag" placeholder="タグ (例: 0911)" value="0911" autocomplete="off" onkeydown="if(event.key==='Enter') submitTutorialSetup()" />
+          </div>
+          <div class="t-notice">
+            ※ Tracker Networkからランクや直近の対戦履歴を自動取得します。<br>
+            ※ 一度登録すると<b>PCをシャットダウンしても次回から自動ログイン</b>されます！
+          </div>
+        </div>
+
+        <div id="tutorialLoadingBox" class="tutorial-loading-box" style="display:none;">
+          <div class="t-loading-spinner"></div>
+          <div id="tutorialLoadingText">ミントとライムが戦績・ランクデータを同期中...</div>
+        </div>
+
+        <div class="tutorial-footer-btn">
+          <button id="btnStartTutorial" class="btn-tutorial-start" onclick="submitTutorialSetup()">
+            🚀 コーチスタジオを開始する！
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📱 スマホ連携 QRコード モーダル -->
+  <div id="mobileConnectModal" class="tutorial-modal-overlay" style="display:none;">
+    <div class="tutorial-card" style="max-width:540px;">
+      <div class="tutorial-header" style="background:linear-gradient(135deg, rgba(56,189,248,0.2), rgba(168,85,247,0.2));">
+        <div class="tutorial-badge" style="background:rgba(56,189,248,0.2); border-color:#38bdf8; color:#38bdf8;">📱 MOBILE CONNECT</div>
+        <h2>✨ スマホ連携（同一Wi-Fi操作）</h2>
+        <p>スマホやタブレットでQRコードを読み取って、手元からミント＆ライムとおしゃべり・ストア確認！</p>
+      </div>
+      <div class="tutorial-body">
+        <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; justify-content:center; margin-bottom:16px;">
+          <div style="background:#fff; padding:10px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+            <img id="modalMobileQrImg" src="" alt="Mobile QR Code" style="width:160px; height:160px; display:block;" />
+          </div>
+          <div style="flex:1; min-width:220px;">
+            <div style="font-size:12px; color:#94a3b8; font-weight:700; margin-bottom:4px;">スマホで開くURL:</div>
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:12px;">
+              <input type="text" id="modalMobileUrlInput" readonly value="http://..." style="width:100%; padding:8px 10px; background:#0f172a; border:1px solid rgba(56,189,248,0.5); color:#38bdf8; border-radius:6px; font-weight:700; font-size:13px;" />
+              <button class="btn-chip" onclick="copyMobileUrl(true)" style="font-size:12px; padding:7px 12px; background:rgba(56,189,248,0.2); border:1px solid rgba(56,189,248,0.5); color:#38bdf8; white-space:nowrap;">
+                📋 コピー
+              </button>
+            </div>
+            <div style="font-size:11px; color:#cbd5e1; line-height:1.6; background:rgba(255,255,255,0.04); padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+              💡 <b>ワンタッチ接続ステップ:</b><br>
+              1. スマホをPCと<b>同じWi-Fi</b>に繋ぎます。<br>
+              2. スマホの標準カメラで左のQRコードをスキャン！<br>
+              3. そのままスマホ画面でサクサク操作できます。
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button class="btn-music-secondary" onclick="closeMobileConnectModal()" style="padding:8px 20px; font-size:13px;">
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎵 楽曲分析 ＆ 鼻歌サーチ モーダル -->
+  <div id="musicSearchModal" class="tutorial-modal-overlay" style="display:none;">
+    <div class="tutorial-card music-modal-card">
+      <div class="tutorial-header music-header">
+        <div class="tutorial-badge music-badge">🎵 MUSIC ANALYZER</div>
+        <h2>✨ 楽曲分析 ＆ 鼻歌サーチ</h2>
+        <p>いま流れている音楽を聴き取って特定したり、あなたの鼻歌・ハミングから曲を探します！</p>
+      </div>
+
+      <div class="music-modal-body">
+        <!-- モード切替タブ（PCの音を直取り / マイクから / 鼻歌） -->
+        <div class="music-mode-tabs">
+          <button id="btnMusicModePc" class="music-tab-btn active" onclick="switchMusicMode('pc')">
+            🖥️ PCの音（YouTube・Spotify等）
+          </button>
+          <button id="btnMusicModeListen" class="music-tab-btn" onclick="switchMusicMode('listen')">
+            🎧 マイクで聴く
+          </button>
+          <button id="btnMusicModeHum" class="music-tab-btn" onclick="switchMusicMode('hum')">
+            🎤 鼻歌で探す
+          </button>
+        </div>
+
+        <!-- 状態表示エリア -->
+        <div class="music-visualizer-box">
+          <div id="musicWaveRig" class="music-wave-bars">
+            <span class="m-wave"></span>
+            <span class="m-wave"></span>
+            <span class="m-wave"></span>
+            <span class="m-wave"></span>
+            <span class="m-wave"></span>
+          </div>
+          <div id="musicStatusText" class="music-status-text">
+            Discordのように共有ウィンドウ・画面を選んで、PC内で流れている曲を最高音質で直取り・特定します！
+          </div>
+          <div id="musicCountdown" class="music-countdown" style="display:none;">5s</div>
+        </div>
+
+        <!-- アクションボタン -->
+        <div class="music-actions-row">
+          <button id="btnStartListening" class="btn-music-action" onclick="startMusicRecognition()">
+            🖥️ 画面を選んでPCの曲を聴き取る
+          </button>
+          <button id="btnCancelMusicModal" class="btn-music-secondary" onclick="closeMusicSearchModal()">
+            閉じる
+          </button>
+        </div>
+
+        <!-- 鼻歌用テキスト入力サポート（もし鼻歌がうまく拾えなかった時の手動アシスト） -->
+        <div id="hummingAssistBox" style="display:none; margin-top:14px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
+          <div style="font-size:12px; color:#cbd5e1; margin-bottom:6px;">💡 思い出せる歌詞のフレーズや特徴があれば入力：</div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="hummingTextInput" placeholder="例: サビで〇〇って歌ってる曲 / アニメのOP" style="flex:1; padding:7px 10px; background:#141224; border:1px solid rgba(236,72,153,0.4); color:#fff; border-radius:6px; font-size:12px;" onkeydown="if(event.key==='Enter') searchMusicByText()" />
+            <button class="btn-chip" onclick="searchMusicByText()" style="padding:0 14px; background:linear-gradient(135deg, #ec4899, #f43f5e); color:#fff; border:none; border-radius:6px; font-weight:700; cursor:pointer;">
+              探す
+            </button>
+          </div>
+        </div>
+
+        <!-- 検索結果カード -->
+        <div id="musicResultCard" class="music-result-card" style="display:none;">
+          <div class="music-result-info">
+            <img id="musicCoverArt" src="" alt="Album Art" class="music-cover-img" />
+            <div class="music-meta">
+              <div id="musicTitle" class="music-title">曲名</div>
+              <div id="musicArtist" class="music-artist">アーティスト名</div>
+              <div id="musicGenre" class="music-genre">ジャンル</div>
+            </div>
+          </div>
+          <!-- 歌詞展開セクション -->
+          <div id="musicLyricsSection" class="music-lyrics-section" style="display:none;">
+            <div class="music-lyrics-header" onclick="toggleMusicLyrics()">
+              <span>📜 歌詞（Lyrics）を見る</span>
+              <span id="musicLyricsToggleArrow">▼</span>
+            </div>
+            <div id="musicLyricsBody" class="music-lyrics-body" style="display:none;">
+              <div id="musicLyricsContent" class="music-lyrics-content"></div>
+            </div>
+          </div>
+
+          <div class="music-card-footer">
+            <a id="musicYoutubeLink" href="#" target="_blank" class="music-play-btn">
+              ▶️ YouTubeで聴く
+            </a>
+            <button class="music-ask-ai-btn" onclick="sendMusicToDuoChat()">
+              💬 2人にチャットで語ってもらう！
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📱 スマホ用ボトムナビゲーションバー（768px以下で自動表示） -->
+  <nav id="mobileBottomNav" class="mobile-bottom-nav">
+    <button class="mobile-nav-item active" onclick="switchTab('chat')" data-tab="chat">
+      <span class="nav-icon">💬</span>
+      <span class="nav-label">チャット</span>
+    </button>
+    <button class="mobile-nav-item" onclick="switchTab('skins')" data-tab="skins">
+      <span class="nav-icon">🛒</span>
+      <span class="nav-label">ストア</span>
+    </button>
+    <button class="mobile-nav-item" onclick="switchTab('analytics')" data-tab="analytics">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">分析</span>
+    </button>
+    <button class="mobile-nav-item" onclick="switchTab('matches')" data-tab="matches">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">戦績</span>
+    </button>
+    <button class="mobile-nav-item" onclick="switchTab('settings')" data-tab="settings">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">設定</span>
+    </button>
+  </nav>
+
+  <script src="script.js"></script>
+</body>
+</html>
