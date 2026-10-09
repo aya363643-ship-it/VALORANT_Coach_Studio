@@ -811,21 +811,68 @@ function updateHeaderPlayerDisplay(name, tag, rank, iconUrl = null) {
   const rankEl = document.getElementById('headerRankBadge');
   const iconEl = document.getElementById('headerRankIcon');
 
+  const defaultRank = rank || localStorage.getItem('rank') || 'GOLD 2';
+
   if (pTagEl) {
     if (name && tag) {
       pTagEl.textContent = `${name}#${tag}`;
     } else if (name) {
       pTagEl.textContent = name;
     } else {
-      pTagEl.textContent = '未設定 (初期設定を行ってください)';
+      const storedName = localStorage.getItem('playerName');
+      const storedTag = localStorage.getItem('playerTag');
+      if (storedName && storedTag) {
+        pTagEl.textContent = `${storedName}#${storedTag}`;
+      } else {
+        pTagEl.textContent = '未設定 (初期設定を行ってください)';
+      }
     }
   }
-  if (rankEl) rankEl.textContent = rank || 'UNRANKED';
-  if (iconEl && iconUrl) iconEl.src = iconUrl;
+  if (rankEl) rankEl.textContent = defaultRank;
+  
+  if (iconEl) {
+    if (iconUrl) {
+      iconEl.src = iconUrl;
+    } else {
+      // ランク名から公式アイコンURLを自動フォールバック計算
+      const rLower = defaultRank.toLowerCase();
+      let iconIndex = 13; // default Gold 2
+      if (rLower.includes('radiant')) iconIndex = 27;
+      else if (rLower.includes('immortal 3')) iconIndex = 26;
+      else if (rLower.includes('immortal 2')) iconIndex = 25;
+      else if (rLower.includes('immortal 1') || rLower.includes('immortal')) iconIndex = 24;
+      else if (rLower.includes('ascendant 3')) iconIndex = 23;
+      else if (rLower.includes('ascendant 2')) iconIndex = 22;
+      else if (rLower.includes('ascendant 1') || rLower.includes('ascendant')) iconIndex = 21;
+      else if (rLower.includes('diamond 3')) iconIndex = 20;
+      else if (rLower.includes('diamond 2')) iconIndex = 19;
+      else if (rLower.includes('diamond 1') || rLower.includes('diamond')) iconIndex = 18;
+      else if (rLower.includes('platinum 3')) iconIndex = 17;
+      else if (rLower.includes('platinum 2')) iconIndex = 16;
+      else if (rLower.includes('platinum 1') || rLower.includes('platinum')) iconIndex = 15;
+      else if (rLower.includes('gold 3')) iconIndex = 14;
+      else if (rLower.includes('gold 2')) iconIndex = 13;
+      else if (rLower.includes('gold 1') || rLower.includes('gold')) iconIndex = 12;
+      else if (rLower.includes('silver 3')) iconIndex = 11;
+      else if (rLower.includes('silver 2')) iconIndex = 10;
+      else if (rLower.includes('silver 1') || rLower.includes('silver')) iconIndex = 9;
+      else if (rLower.includes('bronze 3')) iconIndex = 8;
+      else if (rLower.includes('bronze 2')) iconIndex = 7;
+      else if (rLower.includes('bronze 1') || rLower.includes('bronze')) iconIndex = 6;
+      else if (rLower.includes('iron 3')) iconIndex = 5;
+      else if (rLower.includes('iron 2')) iconIndex = 4;
+      else if (rLower.includes('iron 1') || rLower.includes('iron')) iconIndex = 3;
+      else if (rLower.includes('unranked')) iconIndex = 0;
+      iconEl.src = `https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/${iconIndex}.png`;
+    }
+    iconEl.onerror = () => {
+      iconEl.src = 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/13.png';
+    };
+  }
 
   // ランクの色味・グラデーションを自動調整
   if (rankEl) {
-    applyRankBadgeStyle(rankEl, rank);
+    applyRankBadgeStyle(rankEl, defaultRank);
   }
 }
 
@@ -866,20 +913,36 @@ function applyRankBadgeStyle(badgeEl, rankStr) {
 async function fetchLiveRankAndUpdate() {
   try {
     const res = await fetch('/api/profile_rank');
-    if (!res.ok) return;
+    if (!res.ok) {
+      fallbackOfflineRank();
+      return;
+    }
     const rankData = await res.json();
     
     if (rankData.tierName) {
       const rankInput = document.getElementById('settingRankBadge');
       if (rankInput) rankInput.value = rankData.tierName;
+      localStorage.setItem('rank', rankData.tierName);
       
-      const pName = document.getElementById('settingPlayerName')?.value || '';
-      const pTag = document.getElementById('settingPlayerTag')?.value || '';
+      const pName = document.getElementById('settingPlayerName')?.value || localStorage.getItem('playerName') || '';
+      const pTag = document.getElementById('settingPlayerTag')?.value || localStorage.getItem('playerTag') || '';
       updateHeaderPlayerDisplay(pName, pTag, rankData.tierName, rankData.iconUrl);
+    } else {
+      fallbackOfflineRank();
     }
   } catch (e) {
-    console.error('Error fetching live rank:', e);
+    console.log('Using offline/cached rank display:', e);
+    fallbackOfflineRank();
   }
+}
+
+function fallbackOfflineRank() {
+  const pName = document.getElementById('settingPlayerName')?.value || localStorage.getItem('playerName') || '';
+  const pTag = document.getElementById('settingPlayerTag')?.value || localStorage.getItem('playerTag') || '';
+  const savedRank = localStorage.getItem('rank') || 'GOLD 2';
+  const rankInput = document.getElementById('settingRankBadge');
+  if (rankInput && !rankInput.value) rankInput.value = savedRank;
+  updateHeaderPlayerDisplay(pName, pTag, savedRank);
 }
 
 // プレイヤー設定の保存（名前、タグ、ランク）
@@ -1428,14 +1491,15 @@ async function playDialogueSequence(turns) {
 
     // ★ 音声を先に取得・確保（プリフェッチから取得、または即時生成待機）
     let audioItem = null;
-    if (isVoiceEnabled && !isCoeiroinkUnavailable) {
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isVoiceEnabled && !isCoeiroinkUnavailable && isLocalHost) {
       if (audioPrefetchMap.has(text)) {
         const pref = audioPrefetchMap.get(text);
         audioPrefetchMap.delete(text);
         try {
           audioItem = await Promise.race([
             pref,
-            new Promise(r => setTimeout(r, 12000))
+            new Promise(r => setTimeout(r, 6000))
           ]);
         } catch (e) {}
       } else {
@@ -1444,7 +1508,7 @@ async function playDialogueSequence(turns) {
           if (pref) {
             audioItem = await Promise.race([
               pref,
-              new Promise(r => setTimeout(r, 12000))
+              new Promise(r => setTimeout(r, 6000))
             ]);
           }
         } catch (e) {}
@@ -1539,15 +1603,16 @@ async function sendMessage(message, images = null) {
       });
 
       // 2. 読み上げONの場合、思考中インジケーター（考え中...）が出ている間に
-      // 最初のセリフの音声合成完了を待機（最大12秒待機、でき次第即座に喋り出し開始！）
-      if (isVoiceEnabled && !isCoeiroinkUnavailable) {
+      // 最初のセリフの音声合成完了を待機（※ローカルPython/COEIROINKサーバー稼働時のみ待機、GitHub Pagesなどサーバー無し時は即座にスキップ！）
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isVoiceEnabled && !isCoeiroinkUnavailable && isLocalHost) {
         const firstTurn = data.turns[0];
         const firstPrefetch = audioPrefetchMap.get(firstTurn.text);
         if (firstPrefetch) {
           try {
             await Promise.race([
               firstPrefetch,
-              new Promise(r => setTimeout(r, 18000))
+              new Promise(r => setTimeout(r, 6000))
             ]);
           } catch(e) {}
         }
@@ -2048,7 +2113,7 @@ function renderRoundDetails(rNum) {
           const dCard = document.createElement('div');
           dCard.className = 'duel-agent-card duel-card-dealt';
           dCard.innerHTML = `
-            <img class="duel-agent-icon" src="${duel.opponentIcon || 'assets/ai.png'}" alt="${duel.opponent}" onerror="this.src='assets/ai.png'" />
+            <img class="duel-agent-icon" src="${duel.opponentIcon || 'https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png'}" alt="${duel.opponent}" onerror="this.src='https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png'" />
             <div class="duel-agent-info">
               <span class="duel-agent-name"><span class="badge-tag-dealt">与ダメ</span> 対 ${duel.opponent}</span>
               <div class="duel-hits-row">
@@ -2120,7 +2185,7 @@ function renderRoundDetails(rNum) {
 
     card.innerHTML = `
       <div class="card-actor killer-side">
-        <img class="agent-avatar ${ev.isMe ? 'avatar-me' : ''}" src="${ev.killerIcon || 'assets/ai.png'}" alt="${ev.killerAgent}" onerror="this.src='assets/ai.png'" />
+        <img class="agent-avatar ${ev.isMe ? 'avatar-me' : ''}" src="${ev.killerIcon || 'https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png'}" alt="${ev.killerAgent}" onerror="this.src='https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png'" />
         <span class="actor-name ${ev.isMe ? 'name-me' : ''}">${ev.isMe ? 'あなた' : ev.killerAgent}</span>
       </div>
       <div class="card-center-info">
@@ -2133,7 +2198,7 @@ function renderRoundDetails(rNum) {
       </div>
       <div class="card-actor victim-side">
         <span class="actor-name ${ev.victimIsMe ? 'name-me' : ''}">${ev.victimIsMe ? 'あなた' : ev.victimAgent}</span>
-        <img class="agent-avatar ${ev.victimIsMe ? 'avatar-me' : ''}" src="${ev.victimIcon || 'assets/hinano.png'}" alt="${ev.victimAgent}" onerror="this.src='assets/hinano.png'" />
+        <img class="agent-avatar ${ev.victimIsMe ? 'avatar-me' : ''}" src="${ev.victimIcon || 'https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png'}" alt="${ev.victimAgent}" onerror="this.src='https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png'" />
       </div>
     `;
 
@@ -2195,7 +2260,7 @@ function renderMatchScoreboard(data) {
           </td>
           <td class="sb-col-agent">
             <div class="sb-agent-cell">
-              <img src="${p.agentIcon || 'assets/ai.png'}" alt="${p.agent}" class="sb-agent-icon" onerror="this.src='assets/ai.png'" />
+              <img src="${p.agentIcon || 'https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png'}" alt="${p.agent}" class="sb-agent-icon" onerror="this.src='https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png'" />
               <span>${p.agent}</span>
             </div>
           </td>
@@ -2258,8 +2323,8 @@ async function fetchRecentMatches() {
     { index: 2, id: 'm2', map: 'Haven', mapImage: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt1f24d77cfc1d04ab/5ec335c024d06a4b189b6a78/haven_featured.png', agent: 'Jett', agentIcon: 'https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png', rankName: 'Gold 2', rankIcon: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/13.png', result: '勝利', isWin: true, roundsWon: 13, roundsLost: 7, kills: '12', deaths: '10', assists: '3', kd: '1.20', kdNum: 1.20, hs: '50.0', adr: '117', acs: '190' },
     { index: 3, id: 'm3', map: 'Lotus', mapImage: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt7a20c3a2839ba8bb/63bc7503c004c264bfdb8a49/Lotus_FeaturedImage.jpg', agent: 'Clove', agentIcon: 'https://media.valorant-api.com/agents/1dbf2edd-4729-0984-3115-f793152c3aa0/displayicon.png', rankName: 'Gold 2', rankIcon: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/13.png', result: '勝利', isWin: true, roundsWon: 13, roundsLost: 9, kills: '12', deaths: '13', assists: '6', kd: '0.92', kdNum: 0.92, hs: '16.0', adr: '122', acs: '194' },
     { index: 4, id: 'm4', map: 'Sunset', mapImage: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blte9d6756bf02e2d9a/64e83f211516e45136aa23b7/Sunset_Featured_Image.jpg', agent: 'Jett', agentIcon: 'https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png', rankName: 'Gold 2', rankIcon: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/13.png', result: '敗北', isWin: false, roundsWon: 10, roundsLost: 13, kills: '27', deaths: '19', assists: '4', kd: '1.42', kdNum: 1.42, hs: '41.0', adr: '184', acs: '266' },
-    { index: 5, id: 'm5', map: 'Sunset', mapImage: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blte9d6756bf02e2d9a/64e83f211516e45136aa23b7/Sunset_Featured_Image.jpg', agent: 'Waylay', agentIcon: 'https://media.valorant-api.com/agents/320b2a48-4d9b-a075-30f1-1f93a9b638fa/displayicon.png', rankName: 'Gold 2', rankIcon: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/13.png', result: '勝利', isWin: true, roundsWon: 13, roundsLost: 8, kills: '14', deaths: '14', assists: '4', kd: '1.00', kdNum: 1.00, hs: '27.0', adr: '105', acs: '168' },
-    { index: 6, id: 'm6', map: 'Haven', mapImage: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt1f24d77cfc1d04ab/5ec335c024d06a4b189b6a78/haven_featured.png', agent: 'Neon', agentIcon: 'https://media.valorant-api.com/agents/bb2a4830-4929-a416-8608-999335ef008e/displayicon.png', rankName: 'Gold 1', rankIcon: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/12.png', result: '勝利', isWin: true, roundsWon: 13, roundsLost: 10, kills: '14', deaths: '21', assists: '2', kd: '0.67', kdNum: 0.67, hs: '29.0', adr: '103', acs: '166' },
+    { index: 5, id: 'm5', map: 'Sunset', mapImage: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blte9d6756bf02e2d9a/64e83f211516e45136aa23b7/Sunset_Featured_Image.jpg', agent: 'Waylay', agentIcon: 'https://media.valorant-api.com/agents/df1cb487-4902-002e-5c17-d28e83e78588/displayicon.png', rankName: 'Gold 2', rankIcon: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/13.png', result: '勝利', isWin: true, roundsWon: 13, roundsLost: 8, kills: '14', deaths: '14', assists: '4', kd: '1.00', kdNum: 1.00, hs: '27.0', adr: '105', acs: '168' },
+    { index: 6, id: 'm6', map: 'Haven', mapImage: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt1f24d77cfc1d04ab/5ec335c024d06a4b189b6a78/haven_featured.png', agent: 'Neon', agentIcon: 'https://media.valorant-api.com/agents/bb2a4828-46eb-8cd1-e765-15848195d751/displayicon.png', rankName: 'Gold 1', rankIcon: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/12.png', result: '勝利', isWin: true, roundsWon: 13, roundsLost: 10, kills: '14', deaths: '21', assists: '2', kd: '0.67', kdNum: 0.67, hs: '29.0', adr: '103', acs: '166' },
     { index: 7, id: 'm7', map: 'Ascent', mapImage: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt7200fe417743fa72/5ed56784d14c2b0c30263640/ascent_featured.png', agent: 'Sova', agentIcon: 'https://media.valorant-api.com/agents/320b2a48-4d9b-a075-30f1-1f93a9b638fa/displayicon.png', rankName: 'Gold 1', rankIcon: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/12.png', result: '敗北', isWin: false, roundsWon: 5, roundsLost: 13, kills: '6', deaths: '14', assists: '2', kd: '0.43', kdNum: 0.43, hs: '46.0', adr: '69', acs: '115' },
     { index: 8, id: 'm8', map: 'Ascent', mapImage: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt7200fe417743fa72/5ed56784d14c2b0c30263640/ascent_featured.png', agent: 'Omen', agentIcon: 'https://media.valorant-api.com/agents/8e253930-4c05-31dd-169c-945a19f60c2b/displayicon.png', rankName: 'Gold 1', rankIcon: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/12.png', result: '敗北', isWin: false, roundsWon: 8, roundsLost: 13, kills: '12', deaths: '14', assists: '3', kd: '0.86', kdNum: 0.86, hs: '40.0', adr: '139', acs: '230' },
     { index: 9, id: 'm9', map: 'Split', mapImage: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/bltd3120199e31d4d8c/5ec335c052c53d4f40f0980c/split_featured.png', agent: 'Raze', agentIcon: 'https://media.valorant-api.com/agents/f94c3b30-42be-e959-889c-5aa313dba261/displayicon.png', rankName: 'Gold 1', rankIcon: 'https://trackercdn.com/cdn/tracker.gg/valorant/icons/tiersv2/12.png', result: '勝利', isWin: true, roundsWon: 13, roundsLost: 6, kills: '13', deaths: '10', assists: '2', kd: '1.30', kdNum: 1.30, hs: '42.0', adr: '103', acs: '175' },
@@ -2283,13 +2348,15 @@ function createMatchCardElement(m) {
     kdColorClass = 'kd-negative';
   }
 
+  const agentFallback = 'https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png';
+
   card.innerHTML = `
     ${m.mapImage ? `<div class="match-card-bg" style="background-image: url('${m.mapImage}');"></div>` : ''}
     <div class="match-card-content">
       <div class="match-card-agent-box">
         <span class="match-idx-badge">#${m.index}</span>
         <div class="match-agent-img-wrap">
-          <img class="match-agent-img" src="${m.agentIcon || 'assets/ai.png'}" alt="${m.agent}" onerror="this.src='assets/ai.png'" />
+          <img class="match-agent-img" src="${m.agentIcon || agentFallback}" alt="${m.agent}" onerror="this.src='${agentFallback}'" />
         </div>
       </div>
 
@@ -2487,7 +2554,7 @@ async function loadAnalyticsData(forceRefresh = false) {
         return `
           <div class="stat-row-item">
             <div class="row-agent-cell">
-              <img src="${a.agentIcon || 'assets/ai.png'}" alt="${a.agent}" class="row-agent-icon" onerror="this.src='assets/ai.png'" />
+              <img src="${a.agentIcon || 'https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png'}" alt="${a.agent}" class="row-agent-icon" onerror="this.src='https://media.valorant-api.com/agents/add6443a-4814-3669-3280-a22cba977920/displayicon.png'" />
               <div>
                 <div class="row-title">${a.agent}</div>
                 <div class="row-sub">${a.total}試合 / 総キル: ${a.kills}</div>
