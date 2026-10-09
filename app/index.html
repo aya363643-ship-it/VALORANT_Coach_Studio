@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mint & Lime">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.3.7.1">
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -504,9 +504,9 @@
               <div style="font-weight:700; color:#2dd4bf; margin-bottom:4px;">
                 <span>🌱 ミント (アナリスト)</span>
               </div>
-              <div class="setting-item" style="margin-top:6px;">
+              <div class="setting-item voice-speed-item" style="margin-top:6px;">
                 <label>話すスピード (テンポ)</label>
-                <div style="display:flex; align-items:center; gap:10px;">
+                <div class="voice-speed-slider-wrap">
                   <input type="range" id="settingAiSpeed" min="0.8" max="1.6" step="0.05" value="1.05" oninput="saveSettings()" />
                   <span id="labelAiSpeed" style="font-size:12px; color:#2dd4bf; font-weight:700; min-width:42px;">1.05x</span>
                 </div>
@@ -518,9 +518,9 @@
               <div style="font-weight:700; color:#fb7185; margin-bottom:4px;">
                 <span>⚡ ライム (ゲーマー)</span>
               </div>
-              <div class="setting-item" style="margin-top:6px;">
+              <div class="setting-item voice-speed-item" style="margin-top:6px;">
                 <label>話すスピード (テンポ)</label>
-                <div style="display:flex; align-items:center; gap:10px;">
+                <div class="voice-speed-slider-wrap">
                   <input type="range" id="settingHinanoSpeed" min="0.8" max="1.6" step="0.05" value="1.15" oninput="saveSettings()" />
                   <span id="labelHinanoSpeed" style="font-size:12px; color:#fb7185; font-weight:700; min-width:42px;">1.15x</span>
                 </div>

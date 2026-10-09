@@ -4802,7 +4802,99 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 10px;
   }
+
+  /* 📱 スマホ用 設定画面＆チュートリアルカードの最適化 */
+  .tutorial-modal-overlay {
+    padding: 12px;
+  }
+
+  .tutorial-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 20px 16px !important;
+    gap: 14px !important;
+  }
+
+  .tutorial-header h2 {
+    font-size: 17px !important;
+    line-height: 1.3 !important;
+  }
+
+  .t-input-group {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+  }
+
+  .t-input-group .t-hash {
+    display: none !important;
+  }
+
+  .t-input-group input {
+    width: 100% !important;
+    font-size: 15px !important;
+    padding: 10px 12px !important;
+  }
+
+  /* 設定タブ画面の最適化 */
+  .settings-container {
+    padding: 12px 10px 70px 10px !important;
+    gap: 12px !important;
+  }
+
+  .settings-card {
+    padding: 14px 12px !important;
+    gap: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  .settings-card h3 {
+    font-size: 14px !important;
+  }
+
+  .setting-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+
+  .setting-item label {
+    font-size: 13px !important;
+    white-space: nowrap !important;
+    word-break: normal !important;
+  }
+
+  .voice-speed-slider-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .voice-speed-slider-wrap input[type="range"] {
+    flex: 1 !important;
+    width: auto !important;
+  }
+
+  .setting-item input[type="range"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .setting-item select,
+  .setting-item input[type="text"],
+  .setting-item input[type="password"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .setting-item > div {
+    width: 100% !important;
+  }
 }
+
+
 
 /* 超小型スマホ (480px以下) */
 @media screen and (max-width: 480px) {
