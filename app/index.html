@@ -11,8 +11,96 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mint & Lime">
-  <link rel="stylesheet" href="style.css?v=1.3.7.1">
+  <link rel="stylesheet" href="style.css?v=1.3.8">
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* 📱 スマホ実機向け強制レイアウト補正 (キャッシュに影響されず最優先適用) */
+    @media screen and (max-width: 768px) {
+      .tutorial-modal-overlay {
+        padding: 10px !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      .tutorial-card {
+        width: 95% !important;
+        max-width: 480px !important;
+        padding: 18px 14px !important;
+        box-sizing: border-box !important;
+        margin: 0 auto !important;
+      }
+      .tutorial-body {
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .tutorial-form-box {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 12px 10px !important;
+      }
+      .t-input-group {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .t-input-group .t-hash {
+        display: none !important;
+      }
+      .t-input-group input {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        font-size: 14px !important;
+        padding: 10px 12px !important;
+      }
+      .t-label {
+        font-size: 13px !important;
+        line-height: 1.4 !important;
+      }
+      .t-notice {
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+      }
+      .btn-tutorial-start {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 12px !important;
+      }
+      /* 設定画面のスライダー・ラベル縦書き崩れ防止 */
+      .setting-item {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 6px !important;
+        width: 100% !important;
+      }
+      .setting-item label {
+        font-size: 13px !important;
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+      }
+      .voice-speed-slider-wrap {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        width: 100% !important;
+      }
+      .voice-speed-slider-wrap input[type="range"] {
+        flex: 1 !important;
+        width: auto !important;
+      }
+      .setting-item input[type="range"] {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .setting-item select {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="studio-layout">
