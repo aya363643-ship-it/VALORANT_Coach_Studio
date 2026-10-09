@@ -6,6 +6,11 @@
   <title>Mint & Lime Pocket - VALORANT 専属コーチデュオ</title>
   <link rel="icon" href="assets/favicon.ico">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#090d16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mint & Lime">
   <!-- Google Fonts: Inter & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -238,6 +243,56 @@
       box-shadow: 0 20px 50px rgba(0,0,0,0.7);
       text-align: center;
     }
+
+    /* 🍏 iPhone用スマートインストールバナー（下からスライドアップ） */
+    .ios-install-banner {
+      position: fixed;
+      bottom: 20px;
+      left: 16px;
+      right: 16px;
+      background: rgba(18, 24, 38, 0.96);
+      border: 2px solid #38bdf8;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.4);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      backdrop-filter: blur(20px);
+      animation: bannerSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .ios-install-banner::after {
+      content: "";
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 10px 10px 0;
+      border-style: solid;
+      border-color: #38bdf8 transparent;
+      display: block;
+      width: 0;
+    }
+
+    @keyframes bannerSlideUp {
+      from { transform: translateY(120%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .bounce-arrow {
+      font-size: 24px;
+      animation: bounceArrow 1.2s infinite;
+      margin-top: 4px;
+    }
+
+    @keyframes bounceArrow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(6px); }
+    }
+
 
 
     /* Hero Characters Illustration */
@@ -590,29 +645,102 @@
     </div>
   </div>
 
+  <!-- 🍏 iPhone用スマートアシストバナー -->
+  <div id="iosInstallBanner" class="ios-install-banner" style="display:none;">
+    <div style="font-weight: 800; font-size: 1.05rem; color: #38bdf8; margin-bottom: 4px;">
+      📱 アプリとしてホーム画面に追加しよう！
+    </div>
+    <div style="font-size: 0.85rem; color: #e2e8f0; line-height: 1.5;">
+      下の <b>共有ボタン（四角から上矢印）</b> ➔ <b>「ホーム画面に追加」</b> をタップするだけで、全画面アプリとして使えるよ！
+    </div>
+    <div class="bounce-arrow">👇</div>
+    <button onclick="document.getElementById('iosInstallBanner').style.display='none'" style="margin-top: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #94a3b8; font-size: 11px; padding: 4px 14px; border-radius: 9999px; cursor: pointer;">
+      閉じる
+    </button>
+  </div>
+
   <script>
     lucide.createIcons();
 
+    // 🤖 Android用のネイティブインストールプロンプト保持
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      console.log('[PWA] beforeinstallprompt event fired');
+    });
+
+    // PWA Service Worker 登録
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
     function openWebsiteMobileGuide() {
-      // スマホ端末から押された場合は、直接アプリまたは案内
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        alert("💡 ホーム画面への追加方法:\n\n• iPhone: 共有ボタンを押して「ホーム画面に追加」\n• Android: メニューから「アプリをインストール」\n\nこれで次回からアプリアイコンから一発起動できます！");
-      } else {
-        // PCから押された場合はQRコードモーダルを表示
-        const modal = document.getElementById('websiteMobileModal');
-        const qrImg = document.getElementById('websiteQrImg');
-        if (qrImg) {
-          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(window.location.href)}`;
-        }
-        if (modal) modal.style.display = 'flex';
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      if (isStandalone) {
+        alert("すでにアプリとして起動しています！");
+        return;
       }
+
+      // Android: ボタン1発でインストールダイアログ表示！
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+          }
+          deferredPrompt = null;
+        });
+        return;
+      }
+
+      // iPhone (Safari)
+      const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isIos) {
+        const banner = document.getElementById('iosInstallBanner');
+        if (banner) {
+          banner.style.display = 'flex';
+          setTimeout(() => {
+            banner.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }
+        return;
+      }
+
+      // Androidでプロンプト待機前またはその他スマホ
+      const isMobile = /Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        alert("💡 画面右上のメニュー（︙）から「アプリをインストール」または「ホーム画面に追加」をタップすると、アプリとして保存できます！");
+        return;
+      }
+
+      // PC環境: QRコードモーダルを表示
+      const modal = document.getElementById('websiteMobileModal');
+      const qrImg = document.getElementById('websiteQrImg');
+      if (qrImg) {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(window.location.href)}`;
+      }
+      if (modal) modal.style.display = 'flex';
     }
 
     function closeWebsiteMobileGuide() {
       const modal = document.getElementById('websiteMobileModal');
       if (modal) modal.style.display = 'none';
     }
+
+    // iPhoneでサイトを開いた時、未インストールなら数秒後に自動でアシストバナーを表示
+    window.addEventListener('DOMContentLoaded', () => {
+      const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      if (isIos && !isStandalone) {
+        setTimeout(() => {
+          const banner = document.getElementById('iosInstallBanner');
+          if (banner) banner.style.display = 'flex';
+        }, 1500);
+      }
+    });
   </script>
 </body>
 </html>
